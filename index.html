@@ -5,6 +5,12 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Document</title>
+
+  <style>
+    .hidden {
+      display: none;
+    }
+  </style>
 </head>
 <body>
 
@@ -14,107 +20,212 @@
 
   <hr>
 
-  <h2>Cadastro de Produtos</h2>
+  <!-- Formulário de Cadastro -->
+  <div id="add">
+    <h2>Cadastro de Produtos</h2>
+    <form id="form">
+      <div>
+        <label>Nome</label>
+        <input type="text" name="name" placeholder="Digite o nome do produto">
+      </div>
+      <div>
+        <label>Marca</label>
+        <input type="text" name="brand" placeholder="Digite a marca do produto">
+      </div>
+      <div>
+        <label>Preço</label>
+        <input type="text" name="price" placeholder="Digite o preço do produto">
+      </div>
+      <div>
+        <button type="submit">Cadastrar</button>
+      </div>
+    </form>
+  </div>
 
-  <form id="form">
-    <div>
-      <label>Nome</label>
-      <input type="text" name="name" placeholder="Digite o nome do produto">
-    </div>
-
-    <div>
-      <label>Marca</label>
-      <input type="text" name="brand" placeholder="Digite a marca do produto">
-    </div>
-
-    <div>
-      <label>Preço</label>
-      <input type="text" name="price" placeholder="Digite o preço do produto">
-    </div>
-
-    <div>
-      <button type="submit">Cadastrar</button>
-    </div>
-  </form>
+  <!-- Formulário de Alteração -->
+  <div id="edit" class="hidden">
+    <h2>Alterar Produto</h2>
+    <form id="formEdit">
+      <input type="hidden" name="id">
+      <div>
+        <label>Nome</label>
+        <input type="text" name="name" placeholder="Digite o nome do produto">
+      </div>
+      <div>
+        <label>Marca</label>
+        <input type="text" name="brand" placeholder="Digite a marca do produto">
+      </div>
+      <div>
+        <label>Preço</label>
+        <input type="text" name="price" placeholder="Digite o preço do produto">
+      </div>
+      <div>
+        <button type="submit">Alterar</button>
+      </div>
+    </form>
+  </div>
 
   <script>
     const API_URL = 'http://localhost:8080/api/products'
     const productsList = document.querySelector('#products-list');
+    const add = document.querySelector('#add');
     const form = document.querySelector('#form');
+    const edit = document.querySelector('#edit');
+    const formEdit = document.querySelector('#formEdit');
 
+    // adiciona evento de click no botão excluir
+    function addEventBtnRemove() {
+      const btsRemove = document.querySelectorAll('.btn-remove')
+      btsRemove.forEach(btn => {
+        btn.onclick = function (e) {
+          e.preventDefault()
+  
+          const id = this.dataset.id
+  
+          fetch(`${API_URL}/${id}`, {
+            method: 'DELETE',
+          }).then(response => {
+            response.json().then(data => {
+              console.log(data)
+              if (data.message === 'success') {
+                obterLista()
+                alert('Produto excluído com sucesso!')
+              } else {
+                alert('Ops! Ocorreu um erro! Tente novamente.')
+              }
+            })
+          })
+        }
+      })
+    }
+    
+    // adiciona evento de click no botão editar
+    function addEventBtnEdit() {
+      const btsEdit = document.querySelectorAll('.btn-edit')
+      btsEdit.forEach(btn => {
+        btn.onclick = function (e) {
+          e.preventDefault()
+          
+          add.classList.add('hidden')
+          edit.classList.remove('hidden')
+
+          const id = this.dataset.id
+          const name = this.dataset.name
+          const brand = this.dataset.brand
+          const price = this.dataset.price
+
+          document.forms['formEdit'].id.value = id
+          document.forms['formEdit'].name.value = name
+          document.forms['formEdit'].brand.value = brand
+          document.forms['formEdit'].price.value = price
+        }
+      })
+    }
+    
     // atualizar a página após cadastrar produto
     function obterLista() {
       // obtém a lista de produtos
       fetch(API_URL).then(response => {
         response.json().then(data => {
           console.log(data);
-  
+          
           const productsHtml = data.map(product => `
-            <li>
-              ${product.name} - ${product.brand} - ${product.price} - 
-              <a href="#" class="btn-remove" data-id="${product._id}">[excluir]</a>
+          <li>
+            ${product.name} - ${product.brand} - ${product.price} - 
+            <a
+              href="#" 
+              class="btn-edit" 
+              data-id="${product._id}"
+              data-name="${product.name}" 
+              data-brand="${product.brand}" 
+              data-price="${product.price}"
+            >
+              [editar]
+            </a>
+            <a
+              href="#" 
+              class="btn-remove" 
+              data-id="${product._id}" 
+            >
+              [excluir]
+            </a>
             </li>
-          `).join('')
-  
-          productsList.innerHTML = productsHtml
-
-          const btsRemove = document.querySelectorAll('.btn-remove')
-          btsRemove.forEach(btn => {
-            btn.onclick = function (e) {
-              e.preventDefault()
-
-              const id = this.dataset.id
-
-              fetch(`${API_URL}/${id}`, {
-                method: 'DELETE'
-              }).then(response => {
-                response.json().then(data => {
-                  console.log(data)
-                  if (data.message === 'success') {
-                    obterLista()
-                    alert('Produto excluído com sucesso!')
-                  } else {
-                    alert('Ops! Ocorreu um erro! Tente novamente.')
-                  }
-                })
-              })
+            `).join('')
+            
+            productsList.innerHTML = productsHtml
+            
+            addEventBtnRemove()
+            addEventBtnEdit()
+          })
+        })
+      }
+      
+      obterLista()
+      
+      // ao cadastrar um produto
+      form.onsubmit = function(e) {
+        e.preventDefault()
+        
+        const name = document.forms['form'].name.value
+        const brand = document.forms['form'].brand.value
+        const price = document.forms['form'].price.value
+        
+        fetch(API_URL, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            name,
+            brand,
+            price
+          })
+        }).then(response => {
+          response.json().then(data => {
+            if (data.message === 'success') {
+              form.reset()
+              obterLista()
+              alert('Cadastro realizado com sucesso!')
+            } else {
+              alert('Ops! Ocorreu um erro! Tente novamente.')
             }
           })
         })
-      })
-    }
-
-    obterLista()
-
-    // ao cadastrar um produto
-    form.onsubmit = function(e) {
-      e.preventDefault()
-
-      const name = document.forms['form'].name.value
-      const brand = document.forms['form'].brand.value
-      const price = document.forms['form'].price.value
-
-      fetch(API_URL, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          name,
-          brand,
-          price
+      }
+      
+      // ao editar um produto
+      formEdit.onsubmit = function (e) {
+        e.preventDefault()
+        
+        const id = document.forms['formEdit'].id.value
+        const name = document.forms['formEdit'].name.value
+        const brand = document.forms['formEdit'].brand.value
+        const price = document.forms['formEdit'].price.value
+        
+        fetch(`${API_URL}/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            name,
+            brand,
+            price        
+          })
+        }).then(response => {
+          response.json().then(data => {
+            console.log(data)
+            if (data.message === 'success') {
+              formEdit.reset()
+              add.classList.remove('hidden')
+              edit.classList.add('hidden')
+              obterLista()
+              alert('Produto alterado com sucesso!')
+            } else {
+              alert('Ops! Ocorreu um erro! Tente novamente.')
+            }
+          })
         })
-      }).then(response => {
-        response.json().then(data => {
-          if (data.message === 'success') {
-            form.reset()
-            obterLista()
-            alert('Cadastro realizado com sucesso!')
-          } else {
-            alert('Ops! Ocorreu um erro! Tente novamente.')
-          }
-        })
-      })
     }
   </script>
 </body>
