@@ -51,17 +51,40 @@
   
           const productsHtml = data.map(product => `
             <li>
-              ${product.name} - ${product.brand} - ${product.price}
+              ${product.name} - ${product.brand} - ${product.price} - 
+              <a href="#" class="btn-remove" data-id="${product._id}">[excluir]</a>
             </li>
           `).join('')
   
           productsList.innerHTML = productsHtml
+
+          const btsRemove = document.querySelectorAll('.btn-remove')
+          btsRemove.forEach(btn => {
+            btn.onclick = function (e) {
+              e.preventDefault()
+
+              const id = this.dataset.id
+
+              fetch(`${API_URL}/${id}`, {
+                method: 'DELETE'
+              }).then(response => {
+                response.json().then(data => {
+                  console.log(data)
+                  if (data.message === 'success') {
+                    obterLista()
+                    alert('Produto excluído com sucesso!')
+                  } else {
+                    alert('Ops! Ocorreu um erro! Tente novamente.')
+                  }
+                })
+              })
+            }
+          })
         })
       })
     }
 
     obterLista()
-
 
     // ao cadastrar um produto
     form.onsubmit = function(e) {
